@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Odia Translator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=Noto+Sans+Oriya:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night: #0e1a33;
+    --night-2: #16294d;
+    --ink: #14213d;
+    --sea: #0f766e;
+    --mint: #5eead4;
+    --marigold: #f2b705;
+    --paper: #fbfbf8;
+    --tint: #e9f4f1;
+    --line: #d5dcd6;
+    --muted: #5b647a;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    font-family: "Bricolage Grotesque", "Noto Sans Oriya", system-ui, sans-serif;
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(94,234,212,.18), transparent 60%),
+      radial-gradient(700px 500px at -5% 110%, rgba(242,183,5,.14), transparent 60%),
+      linear-gradient(160deg, var(--night), var(--night-2));
+    background-attachment: fixed;
+  }
+  .app {
+    height: 100vh; height: 100dvh;
+    max-width: 1180px; margin: 0 auto;
+    padding: 20px 24px 18px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  /* header */
+  header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .brand { font-family: "Noto Sans Oriya", sans-serif; font-weight: 700; font-size: clamp(2rem, 4vw, 2.8rem); color: var(--marigold); line-height: 1.1; }
+  h1 { margin: 0; font-size: clamp(1.4rem, 2.6vw, 2rem); font-weight: 800; color: #fff; letter-spacing: -0.01em; }
+  .sub { margin: 0 0 0 auto; color: #aebbd6; font-size: .95rem; }
+
+  /* card */
+  .card {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column; gap: 12px;
+    background: var(--paper);
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  }
+  .bar { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; }
+  select {
+    width: 100%; min-width: 0; padding: 11px 12px; font: inherit; font-weight: 600; color: var(--ink);
+    background: #fff; border: 1.5px solid var(--line); border-radius: 10px;
+  }
+  button.swap {
+    width: 48px; height: 48px; border-radius: 50%; border: 0; cursor: pointer;
+    background: var(--marigold); color: var(--ink);
+    display: grid; place-items: center;
+    box-shadow: 0 4px 12px rgba(242,183,5,.45);
+    transition: transform .5s ease;
+  }
+  button.swap svg { width: 30px; height: 30px; }
+  button.swap:hover, button.swap:active { transform: rotate(180deg); }
+
+  /* panes */
+  .panes { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pane { display: flex; flex-direction: column; min-height: 0; }
+  textarea, .out {
+    flex: 1; min-height: 0; width: 100%; padding: 16px 18px; font: inherit; font-size: 1.15rem;
+    line-height: 1.65; color: var(--ink); border-radius: 12px; border: 1.5px solid var(--line);
+    overflow: auto;
+  }
+  textarea { resize: none; background: #fff; }
+  textarea:focus { outline: 3px solid var(--sea); outline-offset: 1px; border-color: var(--sea); }
+  .out { background: var(--tint); border-color: #c4ddd7; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .out.empty { color: #7b8499; }
+  .meta { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: .85rem; color: var(--muted); min-height: 30px; }
+  button.mini {
+    padding: 4px 14px; font: inherit; font-size: .85rem; font-weight: 600; color: var(--sea); background: #fff;
+    border: 1.5px solid var(--line); border-radius: 8px; cursor: pointer;
+  }
+  button.mini:hover { border-color: var(--sea); background: var(--tint); }
+
+  /* actions */
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button.go {
+    padding: 13px 34px; font: inherit; font-weight: 700; font-size: 1.05rem; color: #fff;
+    background: linear-gradient(135deg, var(--sea), #115e59); border: 0; border-radius: 10px; cursor: pointer;
+    box-shadow: 0 6px 16px rgba(15,118,110,.35);
+  }
+  button.go:disabled { opacity: .55; cursor: wait; }
+  button.ghost {
+    padding: 12px 18px; font: inherit; font-weight: 600; color: var(--ink); background: #fff;
+    border: 1.5px solid var(--line); border-radius: 10px; cursor: pointer;
+  }
+  button.ghost:hover { border-color: var(--ink); }
+  .hint { margin-left: auto; font-size: .85rem; color: var(--muted); }
+  button:focus-visible, select:focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; }
+  .err { color: #b3261e; }
+
+  /* small screens: stack and allow scrolling */
+  @media (max-width: 760px), (max-height: 560px) {
+    html, body { height: auto; }
+    .app { height: auto; min-height: 100vh; min-height: 100dvh; padding: 14px 12px 20px; gap: 10px; }
+    header { gap: 10px; }
+    .sub, .hint { display: none; }
+    .card { padding: 10px; border-radius: 14px; flex: none; }
+    .bar { grid-template-columns: 1fr 44px 1fr; gap: 6px; }
+    select { font-size: 16px; padding: 12px 6px; text-overflow: ellipsis; }
+    button.swap { width: 44px; height: 44px; }
+    button.swap svg { width: 26px; height: 26px; }
+    .panes { grid-template-columns: 1fr; flex: none; gap: 8px; }
+    textarea, .out { flex: none; height: 170px; min-height: 120px; font-size: 16px; padding: 12px 14px; }
+    textarea { resize: vertical; }
+    .meta { min-height: 36px; }
+    button.mini { padding: 7px 16px; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .actions .go { grid-column: 1 / -1; padding: 14px; }
+    .actions .ghost { padding: 12px 8px; }
+  }
+  @media (max-width: 380px) {
+    .brand { font-size: 1.8rem; }
+    h1 { font-size: 1.3rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { button.swap { transition: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <span class="brand">ଓଡ଼ିଆ</span>
+    <h1>Translator</h1>
+    <p class="sub">Odia, English and 20 more languages. Free, no sign-up.</p>
+  </header>
+
+  <section class="card">
+    <div class="bar">
+      <select id="from" aria-label="Translate from"></select>
+      <button class="swap" id="swap" aria-label="Swap languages" title="Swap languages">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><g stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"><circle cx="20" cy="20" r="16"/><path d="M20 4v32M4 20h32M8.7 8.7l22.6 22.6M31.3 8.7L8.7 31.3"/></g><circle cx="20" cy="20" r="3.5" fill="currentColor"/></svg>
+      </button>
+      <select id="to" aria-label="Translate to"></select>
+    </div>
+
+    <div class="panes">
+      <div class="pane">
+        <textarea id="src" placeholder="Type or paste text here" aria-label="Text to translate"></textarea>
+        <div class="meta"><span id="count">0 characters</span><button class="mini" id="copySrc">Copy</button></div>
+      </div>
+      <div class="pane">
+        <div class="out empty" id="out" aria-live="polite">Translation appears here</div>
+        <div class="meta"><span id="status"></span><button class="mini" id="copyOut">Copy</button></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="go" id="go">Translate</button>
+      <button class="ghost" id="word">Download as Word</button>
+      <button class="ghost" id="clear">Clear</button>
+      <span class="hint">Ctrl + Enter to translate</span>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<script>
+/* ---------- SETTINGS ----------
+   PROXY_URL: your Cloudflare Worker URL (AI translation with Gemini, key stays hidden).
+   Leave it empty to use the free keyless MyMemory API (500 characters per request). */
+const PROXY_URL = "https://traslator.soumyaranjan20031975.workers.dev/";
+
+const LANGS = [
+  ["or", "Odia (ଓଡ଼ିଆ)"], ["en", "English"], ["hi", "Hindi (हिन्दी)"], ["bn", "Bengali (বাংলা)"],
+  ["te", "Telugu (తెలుగు)"], ["ta", "Tamil (தமிழ்)"], ["mr", "Marathi (मराठी)"], ["gu", "Gujarati (ગુજરાતી)"],
+  ["kn", "Kannada (ಕನ್ನಡ)"], ["ml", "Malayalam (മലയാളം)"], ["pa", "Punjabi (ਪੰਜਾਬੀ)"], ["ur", "Urdu (اردو)"],
+  ["es", "Spanish"], ["fr", "French"], ["de", "German"], ["pt", "Portuguese"], ["ru", "Russian"],
+  ["ja", "Japanese"], ["ko", "Korean"], ["zh", "Chinese"], ["ar", "Arabic"], ["it", "Italian"]
+];
+
+const $ = id => document.getElementById(id);
+const from = $("from"), to = $("to"), src = $("src"), out = $("out"), status = $("status");
+
+LANGS.forEach(([code, name]) => {
+  from.add(new Option(name, code));
+  to.add(new Option(name, code));
+});
+if (PROXY_URL) from.insertBefore(new Option("Detect language", "auto"), from.firstChild);
+from.value = PROXY_URL ? "auto" : "or";
+to.value = "en";
+
+function setOut(text, empty) {
+  out.textContent = text;
+  out.classList.toggle("empty", !!empty);
+}
+
+const CONTACT_URL = "https://github.com/Srm-03/traslator/issues";
+
+function showError(detail) {
+  status.className = "err";
+  status.textContent = "";
+  status.title = detail || "";
+  status.append("Something went wrong. Please try again, or ");
+  const a = document.createElement("a");
+  a.href = CONTACT_URL;
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.textContent = "contact SRM";
+  a.style.color = "inherit";
+  a.style.fontWeight = "700";
+  status.append(a, ".");
+}
+
+async function translate() {
+  const text = src.value.trim();
+  if (!text) { setOut("Translation appears here", true); return; }
+  $("go").disabled = true;
+  status.className = "";
+  status.textContent = "Translating…";
+  try {
+    let result;
+    if (PROXY_URL) {
+      const r = await fetch(PROXY_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, from: from.value, to: to.value })
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || "Server error");
+      result = data.translation;
+    } else {
+      if (from.value === "auto") from.value = "or";
+      const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text.slice(0, 500)) +
+                  "&langpair=" + from.value + "|" + to.value;
+      const r = await fetch(url);
+      const data = await r.json();
+      if (data.responseStatus !== 200) throw new Error(data.responseDetails || "Translation failed");
+      result = data.responseData.translatedText;
+      if (text.length > 500) status.textContent = "Only the first 500 characters were translated.";
+    }
+    setOut(result, false);
+    if (status.textContent === "Translating…") status.textContent = "";
+  } catch (e) {
+    showError(e.message);
+  } finally {
+    $("go").disabled = false;
+  }
+}
+
+$("go").onclick = translate;
+src.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") translate(); });
+src.addEventListener("input", () => { $("count").textContent = src.value.length + " characters"; });
+
+$("swap").onclick = () => {
+  if (from.value === "auto") return;
+  [from.value, to.value] = [to.value, from.value];
+  const translated = out.classList.contains("empty") ? "" : out.textContent;
+  if (translated) { src.value = translated; src.dispatchEvent(new Event("input")); translate(); }
+};
+
+function flash(msg, isError) {
+  status.className = isError ? "err" : "";
+  status.textContent = msg;
+  setTimeout(() => { if (status.textContent === msg) status.textContent = ""; }, 2500);
+}
+
+async function copyText(text) {
+  if (!text) { flash("Nothing to copy", true); return; }
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const t = document.createElement("textarea");
+    t.value = text;
+    document.body.appendChild(t);
+    t.select();
+    document.execCommand("copy");
+    t.remove();
+  }
+  flash("Copied");
+}
+
+$("copySrc").onclick = () => copyText(src.value.trim());
+$("copyOut").onclick = () => copyText(out.classList.contains("empty") ? "" : out.textContent);
+
+$("word").onclick = async () => {
+  if (out.classList.contains("empty")) { flash("Translate something first", true); return; }
+  if (!window.docx) { showError("Word export library did not load"); return; }
+  try {
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel } = window.docx;
+  const label = sel => sel.value === "auto" ? "Original" : sel.options[sel.selectedIndex].text;
+  const lines = text => text.split(/\r?\n/).map(line =>
+    new Paragraph({
+      spacing: { after: 120 },
+      children: [new TextRun({ text: line, font: "Nirmala UI", size: 24 })]
+    })
+  );
+  const heading = text => new Paragraph({
+    heading: HeadingLevel.HEADING_2,
+    spacing: { before: 240, after: 120 },
+    children: [new TextRun({ text, font: "Nirmala UI", bold: true })]
+  });
+  const doc = new Document({
+    sections: [{
+      children: [
+        heading(label(from)),
+        ...lines(src.value.trim()),
+        heading(label(to)),
+        ...lines(out.textContent)
+      ]
+    }]
+  });
+  const blob = await Packer.toBlob(doc);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "translation-" + new Date().toISOString().slice(0, 10) + ".docx";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  flash("Word file downloaded");
+  } catch (e) {
+    showError(e.message);
+  }
+};
+
+$("clear").onclick = () => { src.value = ""; src.dispatchEvent(new Event("input")); setOut("Translation appears here", true); status.textContent = ""; };
+</script>
+</body>
+</html>
