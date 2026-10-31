@@ -104,6 +104,12 @@
   .hint { margin-left: auto; font-size: .85rem; color: var(--muted); }
   button:focus-visible, select:focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; }
   .err { color: #b3261e; }
+  .copyerr {
+    display: none; margin-left: 4px; padding: 3px 10px; font: inherit; font-size: .8rem; font-weight: 600;
+    color: #b3261e; background: #fff; border: 1.5px solid #e3b4b0; border-radius: 8px; cursor: pointer;
+  }
+  .err:hover .copyerr, .err:focus-within .copyerr { display: inline-block; }
+  @media (hover: none) { .copyerr { display: inline-block; } }
 
   /* small screens: stack and allow scrolling */
   @media (max-width: 760px), (max-height: 560px) {
@@ -214,7 +220,27 @@ function showError(detail) {
   a.textContent = "contact SRM";
   a.style.color = "inherit";
   a.style.fontWeight = "700";
-  status.append(a, ".");
+  status.append(a, ". ");
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "copyerr";
+  b.textContent = "Copy error";
+  b.onclick = async () => {
+    const report = "Odia Translator error: " + (detail || "unknown") +
+                   "\nTime: " + new Date().toISOString() + "\nPage: " + location.href;
+    try {
+      await navigator.clipboard.writeText(report);
+    } catch {
+      const t = document.createElement("textarea");
+      t.value = report;
+      document.body.appendChild(t);
+      t.select();
+      document.execCommand("copy");
+      t.remove();
+    }
+    b.textContent = "Copied";
+  };
+  status.append(b);
 }
 
 async function translate() {
